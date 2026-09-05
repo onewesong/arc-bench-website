@@ -447,6 +447,7 @@ function TraceabilityPanel({
   const selectedCardRef = useRef<HTMLElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [hoverTooltip, setHoverTooltip] = useState<{ x: number; y: number; content: ReactNode } | null>(null);
+  const [expandedTests, setExpandedTests] = useState<Set<string>>(() => new Set());
 
   const showTraceabilityTooltip = (event: ReactFocusEvent<HTMLElement> | ReactMouseEvent<HTMLElement>, content: ReactNode) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -579,6 +580,7 @@ function TraceabilityPanel({
         <div className="traceability-card-list">
           {traceability.tests.map((item) => {
             const isCardSelected = selectedItemKind === "test" && selectedItemId === item.test_id;
+            const isExpanded = expandedTests.has(item.test_id);
             const testName = item.scenario_id || traceabilityFileName(item.file_path) || item.test_id;
             const tooltipContent = (
               <>
@@ -625,6 +627,25 @@ function TraceabilityPanel({
                   ) : null}
                 </div>
               </div>
+              <button
+                type="button"
+                className="traceability-test-expand"
+                aria-expanded={isExpanded}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setExpandedTests((current) => {
+                    const next = new Set(current);
+                    if (next.has(item.test_id)) next.delete(item.test_id);
+                    else next.add(item.test_id);
+                    return next;
+                  });
+                }}
+              >
+                {isExpanded ? "Hide test source" : "View test source"}
+              </button>
+              {isExpanded && item.content ? (
+                <pre className="traceability-test-content">{item.content}</pre>
+              ) : null}
             </article>
             );
           })}

@@ -3722,6 +3722,38 @@ button {
   white-space: nowrap;
 }
 
+.traceability-test-expand {
+  margin-top: 10px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--accent, #0f766e);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.traceability-test-expand:hover,
+.traceability-test-expand:focus-visible {
+  text-decoration: underline;
+}
+
+.traceability-test-content {
+  max-height: 320px;
+  overflow: auto;
+  margin: 10px 0 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
 .traceability-chip-row {
   display: flex;
   align-items: center;

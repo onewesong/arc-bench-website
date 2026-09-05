@@ -112,19 +112,49 @@ class SubmissionArtifactService:
             if node_id and node_id != "__all__" and node_id != req_id:
                 continue
             test_id = str(row.get("test_id") or "")
+            file_path = str(row.get("file_path") or "")
+            content = self._read_test_content(submission, file_path=file_path, req_id=req_id)
+            resolved_file_path = content[0] if content else file_path
             tests.append(
                 {
                     "test_id": test_id,
                     "req_id": req_id,
                     "scenario_id": None,
                     "type": str(row.get("type") or ""),
-                    "file_path": str(row.get("file_path") or ""),
+                    "file_path": resolved_file_path,
                     "first_line": self._normalize_first_line_reference(row.get("first_line")),
                     "status": self._resolve_test_status(row.get("passed")),
+                    "content": content[1] if content else None,
                 }
             )
 
         return {"interfaces": interfaces, "tests": tests}
+
+    def _read_test_content(self, submission: Submission, *, file_path: str, req_id: str) -> tuple[str, str] | None:
+        """Resolve replay metadata to the task's real test file and expose its source."""
+        workspace_path = self.runtime_paths.resolve_existing_path(submission.workspace_path)
+        if workspace_path is None:
+            return None
+        project_root = workspace_path / "template"
+        candidates: list[Path] = []
+        normalized = self._normalize_relative_path(file_path) if file_path else None
+        if normalized:
+            candidates.append(project_root / normalized)
+        tests_root = workspace_path / "tests"
+        if tests_root.is_dir() and req_id:
+            candidates.extend(sorted(tests_root.glob(f"{req_id}-*.spec.ts")))
+        for candidate in candidates:
+            try:
+                candidate = candidate.resolve()
+                candidate.relative_to(workspace_path.resolve())
+            except (OSError, ValueError):
+                continue
+            if candidate.is_file():
+                try:
+                    return candidate.relative_to(workspace_path).as_posix(), candidate.read_text(encoding="utf-8", errors="replace")
+                except OSError:
+                    return None
+        return None
 
     def read_source(
         self,
@@ -147,6 +177,8 @@ class SubmissionArtifactService:
 
         normalized_relative_path = self._normalize_relative_path(file_path)
         target_path = (project_root / normalized_relative_path).resolve()
+        if not target_path.is_file() and normalized_relative_path.parts and normalized_relative_path.parts[0] == "tests":
+            target_path = (project_root.parent / normalized_relative_path).resolve()
         project_root_resolved = project_root.resolve()
 
         try:
@@ -501,4 +533,3 @@ class SubmissionArtifactService:
         if normalized == "FAILED":
             return "test-failed"
         return "default"
-

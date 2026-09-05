@@ -180,6 +180,7 @@ class SubmissionTraceabilityTest(BaseModel):
     file_path: str
     first_line: str | None = None
     status: str | None = None
+    content: str | None = None
 
 
 class SubmissionTraceabilityPayload(BaseModel):
