@@ -1,8 +1,9 @@
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
+from queue import Empty
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -31,7 +32,6 @@ from app.schemas.submission import (
     TestCreatePayload,
     TestCreateResponse,
 )
-from app.services.execution_service import ExecutionService
 from app.services.debug_log_service import DebugLogService
 from app.services.docker_manager import DockerManager
 from app.services.host_demo_preview_service import HostDemoPreviewService
@@ -41,6 +41,7 @@ from app.services.submission_artifact_service import SubmissionArtifactService
 from app.services.submission_event_stream import SubmissionEventStream
 from app.services.submission_service import RunService
 from app.services.agent_submission_service import AgentSubmissionService
+from app.worker.outbox import GlobalRunConcurrencyLimitExceeded, RunConcurrencyLimitExceeded, queue_run
 
 
 submission_router = APIRouter(prefix="/submissions", tags=["submissions"])
@@ -179,7 +180,6 @@ def list_runs(
 @run_router.post("/{submission_id}/start", response_model=SubmissionDetail)
 def start_submission(
     submission_id: str,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_current_user),
 ) -> SubmissionDetail:
@@ -190,10 +190,18 @@ def start_submission(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     if submission.status != SubmissionStatus.PENDING.value:
         raise HTTPException(status_code=409, detail="Submission is already running or completed")
+    try:
+        queue_run(db, submission_id)
+        db.commit()
+    except (GlobalRunConcurrencyLimitExceeded, RunConcurrencyLimitExceeded) as exc:
+        db.rollback()
+        raise HTTPException(status_code=429, detail=str(exc), headers={"Retry-After": "30"}) from exc
+    except (LookupError, ValueError) as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     HostDemoPreviewService.stop_backend()
     service.append_step_event(submission_id, step_key="deploy_agent", message="Submission accepted and queued", status="info")
-    background_tasks.add_task(ExecutionService(db).run_submission, submission_id)
-    return service.to_detail(submission)
+    return service.to_detail(service.get_submission(submission_id, current_user.id))
 
 
 @run_router.post("/{submission_id}/rerun", response_model=SubmissionRerunResponse)
@@ -215,6 +223,15 @@ def rerun_submission(
     except FileNotFoundError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    try:
+        queue_run(db, submission.id)
+        db.commit()
+    except (GlobalRunConcurrencyLimitExceeded, RunConcurrencyLimitExceeded) as exc:
+        db.rollback()
+        raise HTTPException(status_code=429, detail=str(exc), headers={"Retry-After": "30"}) from exc
+    except (LookupError, ValueError) as exc:
+        db.rollback()
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return SubmissionRerunResponse(run=RunService(db).to_summary(submission))
 
@@ -284,9 +301,39 @@ def pause_submission(
         raise HTTPException(status_code=409, detail="Submission is not running")
     try:
         service.request_pause(submission)
+        # Pause is a control-plane operation: stop the bind-mounted runner
+        # immediately instead of waiting for ARC to emit its next checkpoint.
+        # If Docker is temporarily unavailable, the persisted PAUSE_REQUESTED
+        # state remains for the execution worker's immediate-stop fallback.
+        try:
+            DockerManager().remove_submission_container(submission_id)
+            paused_submission = service.get_submission(submission_id, current_user.id)
+            service.set_checkpoint_restart_flag(paused_submission)
+            service.update_status(paused_submission, SubmissionStatus.PAUSED, failure_reason="Execution paused by user request")
+            service.mark_paused_for_manual_edit(
+                service.get_submission(submission_id, current_user.id),
+                reason="Execution paused; workspace is ready for manual edits",
+            )
+            SubmissionEventStream.publish(
+                submission_id,
+                reason="pause_ready_for_manual_edit",
+                submission=True,
+                logs=True,
+                traceability_selected=True,
+                traceability_all=True,
+                preview=True,
+            )
+        except Exception:
+            # The worker will perform the same immediate force-removal when it
+            # observes PAUSE_REQUESTED; do not turn a transient Docker error
+            # into a false successful pause response.
+            pass
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return service.to_detail(submission)
+    except ValueError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return service.to_detail(service.get_submission(submission_id, current_user.id))
 
 
 @router.post("/{submission_id}/cancel", response_model=SubmissionDetail)
@@ -304,6 +351,8 @@ def cancel_submission(
         service.cancel_submission(submission)
         DockerManager().remove_submission_container(submission_id)
     except ValueError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except RuntimeError:
         # The run is already terminal in the database; Docker cleanup can be retried by the runner.
@@ -314,7 +363,6 @@ def cancel_submission(
 @router.post("/{submission_id}/resume", response_model=SubmissionDetail)
 def resume_submission(
     submission_id: str,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_current_user),
 ) -> SubmissionDetail:
@@ -344,16 +392,22 @@ def resume_submission(
             ),
         )
         HostDemoPreviewService.stop_backend()
-        background_tasks.add_task(ExecutionService(db).rerun_submission, submission_id)
+        queue_run(db, submission_id, reuse_workspace=True)
+        db.commit()
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except (GlobalRunConcurrencyLimitExceeded, RunConcurrencyLimitExceeded) as exc:
+        db.rollback()
+        raise HTTPException(status_code=429, detail=str(exc), headers={"Retry-After": "30"}) from exc
+    except ValueError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     return service.to_detail(submission)
 
 
 @router.post("/{submission_id}/continue", response_model=SubmissionDetail)
 def continue_submission(
     submission_id: str,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_current_user),
 ) -> SubmissionDetail:
@@ -365,9 +419,13 @@ def continue_submission(
     try:
         service.request_continue(submission)
         HostDemoPreviewService.stop_backend()
-        background_tasks.add_task(ExecutionService(db).rerun_submission, submission_id)
+        queue_run(db, submission_id, reuse_workspace=True)
+        db.commit()
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except (GlobalRunConcurrencyLimitExceeded, RunConcurrencyLimitExceeded) as exc:
+        db.rollback()
+        raise HTTPException(status_code=429, detail=str(exc), headers={"Retry-After": "30"}) from exc
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return service.to_detail(service.get_submission(submission_id, current_user.id))
@@ -465,6 +523,7 @@ async def stream_submission_events(
     submission_id: str,
     request: Request,
     since_version: int = 0,
+    last_event_id: str | None = Header(default=None, alias="Last-Event-ID"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_current_user),
 ) -> StreamingResponse:
@@ -474,20 +533,35 @@ async def stream_submission_events(
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
+    try:
+        if last_event_id and last_event_id.isdigit():
+            since_version = max(since_version, int(last_event_id))
+    except ValueError:
+        pass
+
     async def event_generator():
         event_queue = SubmissionEventStream.subscribe(submission_id)
         try:
             yield ": connected\n\n"
-            for event in SubmissionEventStream.snapshot(submission_id):
-                if event.version > since_version:
+            last_version = since_version
+            for event in SubmissionEventStream.snapshot(submission_id, since_version=since_version):
+                if event.version > last_version:
                     yield SubmissionEventStream.encode_sse(event)
+                    last_version = event.version
             while True:
                 if await request.is_disconnected():
                     break
-                event = await asyncio.to_thread(event_queue.get)
+                try:
+                    event = await asyncio.to_thread(event_queue.queue.get, True, 15)
+                except Empty:
+                    yield ": heartbeat\n\n"
+                    continue
                 if event is None:
                     break
+                if event.version <= last_version:
+                    continue
                 yield SubmissionEventStream.encode_sse(event)
+                last_version = event.version
         finally:
             SubmissionEventStream.unsubscribe(submission_id, event_queue)
 

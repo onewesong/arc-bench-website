@@ -3046,6 +3046,85 @@ button {
   gap: 16px;
 }
 
+.results-summary-count {
+  display: grid;
+  gap: 3px;
+  min-width: 92px;
+}
+
+.results-summary-label,
+.run-output-heading > div:first-child > div:first-child {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.results-summary-meter {
+  display: grid;
+  flex: 1;
+  gap: 7px;
+}
+
+.results-summary-meter-head,
+.run-output-heading,
+.run-activity-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.results-summary-meter-head {
+  color: var(--text-dim);
+  font-size: 0.76rem;
+}
+
+.results-summary-meter-head strong {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+
+.results-empty--quiet {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  min-height: 220px;
+  padding: 28px;
+  text-align: left;
+}
+
+.results-empty-mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.results-empty-title {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.results-empty-copy {
+  max-width: 300px;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
 .results-count {
   font-size: 1.3rem;
   font-weight: 700;
@@ -3643,6 +3722,38 @@ button {
   white-space: nowrap;
 }
 
+.traceability-test-expand {
+  margin-top: 10px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--accent, #0f766e);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.traceability-test-expand:hover,
+.traceability-test-expand:focus-visible {
+  text-decoration: underline;
+}
+
+.traceability-test-content {
+  max-height: 320px;
+  overflow: auto;
+  margin: 10px 0 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
 .traceability-chip-row {
   display: flex;
   align-items: center;
@@ -4222,9 +4333,53 @@ button {
 
 .stdio-view {
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--bg);
+}
+
+.run-activity-panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.run-activity-panel.stdio-view {
+  gap: 0;
+}
+
+.run-activity-header {
+  flex: 0 0 auto;
+}
+
+.run-activity-panel.stdio-view .run-activity-header {
+  padding: 14px 16px 12px;
+}
+
+.run-activity-events {
+  flex: 0 0 auto;
+  max-height: 190px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.run-activity-panel.stdio-view .run-activity-events {
+  max-height: 180px;
+  padding: 14px 16px;
+}
+
+.run-output-section {
+  min-height: 0;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.run-activity-panel.stdio-view .run-output-section {
+  padding: 0 16px 16px;
 }
 
 .stdio-code-view {
@@ -4238,8 +4393,10 @@ button {
   font-family: "Consolas", "Cascadia Mono", "SFMono-Regular", "Liberation Mono", monospace;
   font-size: 0.82rem;
   line-height: 1.55;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
+  word-break: normal;
+  tab-size: 2;
+  scrollbar-color: color-mix(in srgb, var(--accent) 42%, var(--border)) transparent;
 }
 
 .preview-panel-shell {
@@ -4943,6 +5100,29 @@ button {
 
 .auth-form .btn-primary {
   margin-top: 6px;
+}
+
+.run-activity-heading {
+  justify-content: flex-start;
+}
+
+.run-activity-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.run-output-heading {
+  margin-bottom: 10px;
+}
+
+.run-output-count {
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 0.68rem;
 }
 
 .auth-provider-switch {
@@ -7761,6 +7941,8 @@ button {
 .profile-member-since { color: var(--text-muted); font-size: 12px; }
 .profile-edit-trigger { display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 34px; border-radius: 6px; background: var(--tag-mint-bg); color: var(--tag-mint-text); font-size: 12px; font-weight: 700; cursor: pointer; transition: filter var(--transition); }
 .profile-edit-trigger:hover { filter: brightness(0.97); }
+.profile-meter-link { display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 34px; border-radius: 6px; background: var(--tag-amber-bg); color: var(--tag-amber-text); font-size: 12px; font-weight: 700; text-decoration: none; transition: filter var(--transition); }
+.profile-meter-link:hover { filter: brightness(0.97); }
 .profile-contact-card, .profile-editor-card { padding: 17px 18px; }
 .profile-team-card { display: grid; gap: 10px; padding: 17px 18px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); box-shadow: 0 4px 15px rgba(36, 39, 45, 0.035); }
 .profile-team-card > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -7830,6 +8012,105 @@ button {
   .profile-sidebar { position: static; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .profile-person-card { grid-row: span 2; }
   .profile-editor-card { grid-column: 1 / -1; }
+}
+
+.run-output-toolbar {
+  min-height: 42px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.run-output-stream-selector {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.run-output-stream-selector label {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.run-output-stream-selector select {
+  height: 28px;
+  min-width: 112px;
+  padding: 0 28px 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  outline: none;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.run-output-stream-selector select:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.run-output-stream-selector > span,
+.run-output-refreshed {
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 0.65rem;
+}
+
+.run-output-console {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
+  padding: 12px 14px;
+  background: var(--bg);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.run-output-console--stderr.has-output {
+  color: color-mix(in srgb, var(--warn) 72%, var(--text-dim));
+}
+
+.run-output-refreshed {
+  padding: 5px 10px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-elevated);
+  text-align: right;
+}
+
+.playground-submission-page .run-output-toolbar {
+  border-color: var(--submission-line);
+  background: color-mix(in srgb, var(--bg-elevated) 46%, var(--bg) 54%);
+}
+
+.playground-submission-page .run-output-section {
+  padding: 0;
+}
+
+.playground-submission-page .run-output-console.stdio-code-view {
+  min-height: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 12px 14px;
+  font-size: 0.72rem;
 }
 
 @media (max-width: 640px) {
@@ -7963,6 +8244,58 @@ button {
 
 .submission-page .log-panel {
   padding: 14px;
+}
+
+.submission-page .run-output-section .log-panel {
+  flex: 1 1 auto;
+  min-height: 180px;
+  max-height: 460px;
+  overflow: auto;
+  white-space: pre;
+  word-break: normal;
+  scrollbar-color: color-mix(in srgb, var(--accent) 42%, var(--border)) transparent;
+}
+
+.submission-page .log-panel,
+.submission-page .stdio-code-view {
+  border-radius: 5px;
+}
+
+.submission-page .log-panel.is-empty,
+.submission-page .stdio-code-view.is-empty {
+  display: grid;
+  min-height: 150px;
+  place-items: center;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-style: normal;
+  text-align: center;
+  white-space: normal;
+}
+
+.submission-page .log-panel.has-output,
+.submission-page .stdio-code-view.has-output {
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+.playground-submission-page .run-output-heading {
+  padding: 0 12px;
+}
+
+.playground-submission-page .run-activity-heading {
+  padding: 0 12px;
+}
+
+.playground-submission-page .stdio-code-view.is-empty {
+  display: grid;
+  min-height: 180px;
+  place-items: center;
+  color: var(--submission-text-dim);
+  font-family: inherit;
+  font-style: normal;
+  white-space: normal;
 }
 
 .submission-page .results-panel,
@@ -8432,6 +8765,191 @@ button {
   border-radius: 8px;
   background: var(--submission-panel-bg);
   color: #374151;
+}
+
+.playground-submission-page .run-output-section {
+  padding: 0 16px 16px;
+}
+
+.playground-submission-page .run-output-section .stdio-code-view {
+  width: 100%;
+  margin: 0;
+  min-height: 0;
+  border-radius: 6px;
+}
+
+.playground-submission-page .run-activity-panel.stdio-view .run-activity-header,
+.playground-submission-page .run-activity-panel.stdio-view .run-activity-events {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* Submission workbench: both rails collapse to the same quiet icon strip. */
+.playground-submission-page .playground-submission-sidebar.is-minimized,
+.playground-submission-page .preview-panel-shell.is-minimized {
+  border-radius: 4px !important;
+  box-shadow: none !important;
+}
+
+.playground-submission-page .playground-submission-sidebar.is-minimized > button,
+.playground-submission-page .submission-panel-minimized-toggle {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--submission-panel-bg) !important;
+  color: var(--text-muted) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.playground-submission-page .playground-submission-sidebar.is-minimized > button:hover,
+.playground-submission-page .submission-panel-minimized-toggle:hover {
+  background: var(--submission-hover-bg) !important;
+  color: var(--text) !important;
+}
+
+.playground-submission-page .preview-panel-shell.is-minimized .preview-panel-header {
+  height: 100%;
+  min-height: 0;
+  padding: 0 !important;
+  border-bottom: 0 !important;
+  justify-content: center;
+}
+
+.playground-submission-page .preview-panel-shell.is-minimized .submission-panel-minimized-toggle {
+  width: 44px !important;
+}
+
+/* File, diff, results and console use one shared surface language. */
+.playground-submission-page .ide-shell,
+.playground-submission-page .submission-results-workspace,
+.playground-submission-page .stdio-view {
+  background: var(--submission-panel-bg) !important;
+}
+
+.playground-submission-page .ide-editor-topbar,
+.playground-submission-page .run-activity-header,
+.playground-submission-page .run-output-heading {
+  min-height: 40px;
+  border-bottom: 1px solid var(--submission-line);
+  background: color-mix(in srgb, var(--bg-elevated) 46%, var(--bg) 54%);
+}
+
+.playground-submission-page .ide-code-view,
+.playground-submission-page .stdio-code-view,
+.playground-submission-page .submission-results-workspace .results-panel {
+  border: 1px solid var(--submission-line);
+  border-radius: 4px;
+  background: var(--submission-panel-bg);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.playground-submission-page .run-activity-panel.stdio-view {
+  gap: 0;
+  padding: 0;
+}
+
+.playground-submission-page .run-activity-panel.stdio-view .run-activity-header {
+  padding: 0 14px;
+}
+
+.playground-submission-page .run-activity-panel.stdio-view .run-activity-events {
+  max-height: 150px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--submission-line);
+}
+
+.playground-submission-page .run-activity-panel.stdio-view .run-activity-events > div:last-child {
+  display: grid;
+  gap: 6px;
+}
+
+.playground-submission-page .run-output-section {
+  padding: 0 14px 14px;
+}
+
+.playground-submission-page .run-output-heading {
+  padding: 10px 0;
+  border-bottom: 0;
+}
+
+.playground-submission-page .run-panel-kicker,
+.playground-submission-page .run-output-stream header span {
+  color: var(--text-dim);
+  font-size: 0.67rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.playground-submission-page .run-panel-caption {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+.playground-submission-page .run-output-streams {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-height: 0;
+}
+
+.playground-submission-page .run-output-stream {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--submission-line);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--submission-panel-bg);
+}
+
+.playground-submission-page .run-output-stream header {
+  height: 30px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--submission-line);
+  background: color-mix(in srgb, var(--bg-elevated) 56%, var(--bg) 44%);
+}
+
+.playground-submission-page .run-output-stream header small {
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+}
+
+.playground-submission-page .run-output-stream .stdio-code-view {
+  flex: 1;
+  min-height: 180px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 10px;
+  color: var(--text-dim);
+  font-size: 0.71rem;
+  line-height: 1.45;
+}
+
+.playground-submission-page .run-output-stream--stderr .stdio-code-view {
+  color: color-mix(in srgb, var(--warn) 72%, var(--text-dim));
+}
+
+@media (max-width: 900px) {
+  .playground-submission-page .run-output-streams {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .playground-submission-page .run-output-stream .stdio-code-view {
+    min-height: 120px;
+  }
 }
 
 .playground-submission-page .preview-panel-header {

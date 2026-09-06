@@ -22,6 +22,7 @@ requirement/
 
 .env
 config.yaml
+source.sh
 *.whl
 __demo__
 !data/playground/web/__demo__/
@@ -43,3 +44,4 @@ data/beta-invite-codes.yaml
 
 docs
 node_modules
+backups

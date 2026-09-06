@@ -223,6 +223,7 @@ export type SubmissionTraceabilityTest = {
   file_path: string;
   first_line: string | null;
   status: "passed" | "failed" | null;
+  content?: string | null;
 };
 
 export type SubmissionTraceabilityPayload = {

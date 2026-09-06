@@ -10,6 +10,7 @@ class RuntimeType(str, Enum):
 
 class AgentSourceType(str, Enum):
     UPLOAD = "upload"
+    DEMO_REPLAY = "demo_replay"
     BUILTIN_ARC_AGENT = "builtin_arc_agent"
     BUILTIN_OCTOS_AGENT = "builtin_octos_agent"
 
@@ -17,6 +18,8 @@ class AgentSourceType(str, Enum):
 class SubmissionStatus(str, Enum):
     READY = "READY"
     PENDING = "PENDING"
+    QUEUED = "QUEUED"
+    STARTING = "STARTING"
     RUNNING = "RUNNING"
     PAUSE_REQUESTED = "PAUSE_REQUESTED"
     PAUSED = "PAUSED"

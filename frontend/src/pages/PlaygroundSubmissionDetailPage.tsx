@@ -447,6 +447,7 @@ function TraceabilityPanel({
   const selectedCardRef = useRef<HTMLElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [hoverTooltip, setHoverTooltip] = useState<{ x: number; y: number; content: ReactNode } | null>(null);
+  const [expandedTests, setExpandedTests] = useState<Set<string>>(() => new Set());
 
   const showTraceabilityTooltip = (event: ReactFocusEvent<HTMLElement> | ReactMouseEvent<HTMLElement>, content: ReactNode) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -579,6 +580,7 @@ function TraceabilityPanel({
         <div className="traceability-card-list">
           {traceability.tests.map((item) => {
             const isCardSelected = selectedItemKind === "test" && selectedItemId === item.test_id;
+            const isExpanded = expandedTests.has(item.test_id);
             const testName = item.scenario_id || traceabilityFileName(item.file_path) || item.test_id;
             const tooltipContent = (
               <>
@@ -625,6 +627,25 @@ function TraceabilityPanel({
                   ) : null}
                 </div>
               </div>
+              <button
+                type="button"
+                className="traceability-test-expand"
+                aria-expanded={isExpanded}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setExpandedTests((current) => {
+                    const next = new Set(current);
+                    if (next.has(item.test_id)) next.delete(item.test_id);
+                    else next.add(item.test_id);
+                    return next;
+                  });
+                }}
+              >
+                {isExpanded ? "Hide test source" : "View test source"}
+              </button>
+              {isExpanded && item.content ? (
+                <pre className="traceability-test-content">{item.content}</pre>
+              ) : null}
             </article>
             );
           })}
@@ -841,11 +862,13 @@ function SubmissionFilePanel({
   }, [source]);
 
   useEffect(() => {
-    if (isDiffPanel) {
+    if (isDiffPanel || !submission?.workspace_path) {
+      setWorkspaceFiles([]);
+      setWorkspaceFilesLoading(false);
       return;
     }
     loadWorkspaceFiles();
-  }, [isDiffPanel, submissionId, workspaceRefreshToken]);
+  }, [isDiffPanel, submission?.workspace_path, submissionId, workspaceRefreshToken]);
 
   useEffect(() => {
     if (!fileSource?.file_path) {
@@ -1540,13 +1563,13 @@ export default function PlaygroundSubmissionDetailPage() {
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
   const [pulseNodeId, setPulseNodeId] = useState<string | null>(null);
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(340);
-  const [previewMinimized, setPreviewMinimized] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [previewMinimized, setPreviewMinimized] = useState(true);
   const [previewWidth, setPreviewWidth] = useState(() => {
     if (typeof window === "undefined") {
-      return 480;
+      return 360;
     }
-    return Math.round(window.innerWidth * 0.333);
+    return Math.min(360, Math.round(window.innerWidth * 0.28));
   });
   const eventSourceRef = useRef<EventSource | null>(null);
   const sseReconnectRef = useRef<number | null>(null);
@@ -1606,7 +1629,7 @@ export default function PlaygroundSubmissionDetailPage() {
   const previewUrl = previewStatus?.preview_url ?? api.getSubmissionPreviewUrl(submissionId);
   const previewFrameUrl = `${previewUrl}${previewUrl.includes("?") ? "&" : "?"}refresh=${previewFrameVersion}`;
   const previewAvailable = previewStatus?.available ?? false;
-  const previewPanelWidth = previewMinimized ? "80px" : `${previewWidth}px`;
+  const previewPanelWidth = previewMinimized ? "44px" : `${previewWidth}px`;
   const selectedDiffCommit = useMemo(
     () => commitHistory?.commits.find((commit) => commit.oid === selectedCommitOid) ?? null,
     [commitHistory, selectedCommitOid],
@@ -1684,8 +1707,9 @@ export default function PlaygroundSubmissionDetailPage() {
     setLogs((current) => incremental && current
       ? {
           ...latestLogs,
-          console: `${current.console}${latestLogs.console}`,
           stdout: `${current.stdout}${latestLogs.stdout}`,
+          stderr: latestLogs.stderr || current.stderr,
+          console: `${current.stdout}${latestLogs.stdout}`,
           runner_events: [...(current.runner_events ?? []), ...(latestLogs.runner_events ?? [])],
           runner_event_lines: [...(current.runner_event_lines ?? []), ...(latestLogs.runner_event_lines ?? [])],
         }
@@ -2412,7 +2436,7 @@ export default function PlaygroundSubmissionDetailPage() {
   const clampPreviewWidth = (value: number) => {
     const viewportWidth = typeof window === "undefined" ? 1440 : window.innerWidth;
     const maxWidth = Math.min(720, Math.floor(viewportWidth * 0.5));
-    return Math.max(320, Math.min(maxWidth, value));
+    return Math.max(280, Math.min(maxWidth, value));
   };
 
   const onPreviewResizeMouseDown = (event: React.MouseEvent) => {
@@ -2513,11 +2537,11 @@ export default function PlaygroundSubmissionDetailPage() {
     }}>
       <div className="gap-1.5 p-2" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <section
-          className="action-section submission-status-panel playground-submission-sidebar rounded-lg border border-[var(--border)] bg-[var(--bg)] shadow-[0_10px_28px_rgba(15,23,42,0.05)]"
+          className={`action-section submission-status-panel playground-submission-sidebar rounded-lg border border-[var(--border)] bg-[var(--bg)] shadow-[0_10px_28px_rgba(15,23,42,0.05)]${sidebarMinimized ? " is-minimized" : ""}`}
           style={{
-            width: sidebarMinimized ? "76px" : `${sidebarWidth}px`,
-            minWidth: sidebarMinimized ? "76px" : `${sidebarWidth}px`,
-            maxWidth: sidebarMinimized ? "76px" : `${sidebarWidth}px`,
+            width: sidebarMinimized ? "44px" : `${sidebarWidth}px`,
+            minWidth: sidebarMinimized ? "44px" : `${sidebarWidth}px`,
+            maxWidth: sidebarMinimized ? "44px" : `${sidebarWidth}px`,
             overflow: "hidden",
             transition: "width 0.24s ease, min-width 0.24s ease, max-width 0.24s ease",
           }}
@@ -2652,7 +2676,7 @@ export default function PlaygroundSubmissionDetailPage() {
               aria-label="Expand left sidebar"
               title="Expand left sidebar"
             >
-              <PanelChevronIcon direction="right" size={20} />
+                    <PanelChevronIcon direction="right" size={14} />
             </button>
           )}
         </section>
@@ -2683,7 +2707,7 @@ export default function PlaygroundSubmissionDetailPage() {
                 { key: "file", label: "File" },
                 { key: "diff", label: "Diff" },
                 { key: "results", label: "Test Result" },
-                { key: "stdio", label: "Stdout/Stderror" },
+                { key: "stdio", label: "Stdout / stderr" },
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -2973,7 +2997,7 @@ export default function PlaygroundSubmissionDetailPage() {
           </div>
         ) : null}
 
-        <aside className="preview-panel-shell rounded-lg border border-[var(--border)] bg-[var(--bg)] shadow-[0_10px_28px_rgba(15,23,42,0.05)]" style={{
+        <aside className={`preview-panel-shell rounded-lg border border-[var(--border)] bg-[var(--bg)] shadow-[0_10px_28px_rgba(15,23,42,0.05)]${previewMinimized ? " is-minimized" : ""}`} style={{
           width: previewPanelWidth,
           overflow: "hidden",
           display: "flex",
@@ -3064,7 +3088,7 @@ export default function PlaygroundSubmissionDetailPage() {
                 aria-label="Expand preview panel"
                 title="Expand preview panel"
               >
-                <PanelChevronIcon direction="left" size={20} />
+                <PanelChevronIcon direction="left" size={14} />
               </button>
             )}
           </div>
@@ -3132,4 +3156,3 @@ export default function PlaygroundSubmissionDetailPage() {
     </div>
   );
 }
-

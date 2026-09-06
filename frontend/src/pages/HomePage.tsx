@@ -22,17 +22,6 @@ type SurfaceCard = {
   comingSoon?: boolean;
 };
 
-type FeatureSlideKey = "meta-model" | "compilation" | "traceability";
-
-type FeatureSlide = {
-  key: FeatureSlideKey;
-  code: string;
-  label: string;
-  eyebrow: string;
-  title: string;
-  description: string;
-};
-
 const surfaceToneClasses: Record<
   SurfaceKey,
   {
@@ -62,156 +51,6 @@ const surfaceToneClasses: Record<
   },
 };
 
-type BnfTone = "keyword" | "field" | "type" | "operator" | "plain";
-
-const bnfToneClassNames: Record<BnfTone, string> = {
-  keyword: "font-semibold text-[var(--text)]",
-  field: "font-semibold text-[var(--text-dim)]",
-  type: "text-[var(--text)]",
-  operator: "text-[var(--text-muted)]",
-  plain: "text-[var(--text-dim)]",
-};
-
-const requirementMetaModelBnf: Array<Array<{ text: string; tone?: BnfTone }>> = [
-  [
-    { text: "RequirementDoc", tone: "keyword" },
-    { text: " ::= ", tone: "operator" },
-    { text: "Node", tone: "keyword" },
-  ],
-  [],
-  [
-    { text: "Node", tone: "keyword" },
-    { text: " ::= ", tone: "operator" },
-    { text: "id", tone: "field" },
-    { text: ": ", tone: "operator" },
-    { text: "ID", tone: "type" },
-  ],
-  [
-    { text: "       | ", tone: "operator" },
-    { text: "name", tone: "field" },
-    { text: ": ", tone: "operator" },
-    { text: "String", tone: "type" },
-  ],
-  [
-    { text: "       | ", tone: "operator" },
-    { text: "description", tone: "field" },
-    { text: ": ", tone: "operator" },
-    { text: "MultiModalText", tone: "keyword" },
-  ],
-  [
-    { text: "       | ", tone: "operator" },
-    { text: "dependencies", tone: "field" },
-    { text: ": [ ", tone: "operator" },
-    { text: "ID", tone: "type" },
-    { text: "* ]", tone: "operator" },
-  ],
-  [
-    { text: "       | ", tone: "operator" },
-    { text: "scenarios", tone: "field" },
-    { text: ": [ ", tone: "operator" },
-    { text: "Scenario", tone: "keyword" },
-    { text: "* ]", tone: "operator" },
-  ],
-  [
-    { text: "       | ", tone: "operator" },
-    { text: "children", tone: "field" },
-    { text: ": [ ", tone: "operator" },
-    { text: "Node", tone: "keyword" },
-    { text: "* ]", tone: "operator" },
-  ],
-  [],
-  [
-    { text: "Scenario", tone: "keyword" },
-    { text: " ::= ", tone: "operator" },
-    { text: "id", tone: "field" },
-    { text: ": ", tone: "operator" },
-    { text: "ID", tone: "type" },
-  ],
-  [
-    { text: "           | ", tone: "operator" },
-    { text: "name", tone: "field" },
-    { text: ": ", tone: "operator" },
-    { text: "String", tone: "type" },
-  ],
-  [
-    { text: "           | ", tone: "operator" },
-    { text: "prerequisites", tone: "field" },
-    { text: ": [ ", tone: "operator" },
-    { text: "ID", tone: "type" },
-    { text: "* ]", tone: "operator" },
-  ],
-  [
-    { text: "           | ", tone: "operator" },
-    { text: "steps", tone: "field" },
-    { text: ": [ ", tone: "operator" },
-    { text: "Step", tone: "keyword" },
-    { text: "* ]", tone: "operator" },
-  ],
-  [],
-  [
-    { text: "Step", tone: "keyword" },
-    { text: " ::= ", tone: "operator" },
-    { text: "given", tone: "field" },
-    { text: ": ", tone: "operator" },
-    { text: "String", tone: "type" },
-  ],
-  [
-    { text: "       | ", tone: "operator" },
-    { text: "when", tone: "field" },
-    { text: ": ", tone: "operator" },
-    { text: "String", tone: "type" },
-  ],
-  [
-    { text: "       | ", tone: "operator" },
-    { text: "then", tone: "field" },
-    { text: ": ", tone: "operator" },
-    { text: "String", tone: "type" },
-  ],
-  [],
-  [
-    { text: "MultiModalText", tone: "keyword" },
-    { text: " ::= ", tone: "operator" },
-    { text: "Text", tone: "type" },
-    { text: " | ", tone: "operator" },
-    { text: "ImageTag", tone: "keyword" },
-  ],
-  [
-    { text: "ImageTag", tone: "keyword" },
-    { text: " ::= ", tone: "operator" },
-    { text: "![image](Path)", tone: "type" },
-  ],
-];
-
-const featureSlides: FeatureSlide[] = [
-  {
-    key: "meta-model",
-    code: "01",
-    label: "Meta-Model",
-    eyebrow: "Requirement DSL",
-    title: "Meta-Model of Requirement",
-    description:
-      "A requirement document is represented as a DAG of requirement nodes. Each node carries descriptions, dependencies, scenarios, and executable Gherkin-like steps.",
-  },
-  {
-    key: "compilation",
-    code: "02",
-    label: "Compilation Process",
-    eyebrow: "Spec-to-system workflow",
-    title: "Compilation Process",
-    description:
-      "ARC compiles structured multi-modal requirements into runnable web systems through top-down architecture construction and bottom-up implementation feedback.",
-  },
-  {
-    key: "traceability",
-    code: "03",
-    label: "Traceability",
-    eyebrow: "Evidence-linked execution",
-    title: "Traceability",
-    description:
-      "Each requirement node keeps links to generated interfaces, tests, commits, and execution states, so implementation evidence can be inspected throughout the run.",
-  },
-];
-
 export default function HomePage() {
   const [requirements, setRequirements] = useState<RequirementSummary[]>([]);
   const [competitions, setCompetitions] = useState<CompetitionSummary[]>([]);
@@ -228,7 +67,6 @@ export default function HomePage() {
   const webRequirementCount = requirements.filter((item) => item.category === "web").length;
   const passedSubmissions = submissions.filter((item) => item.status === "PASSED").length;
   const publicCompetitionCount = competitions.filter((item) => item.is_public).length;
-  const activeSlide = featureSlides[activeFeatureSlide];
 
   const surfaces = useMemo<SurfaceCard[]>(
     () => [
@@ -333,7 +171,7 @@ export default function HomePage() {
         </aside>
       </div>
 
-      <section className="mx-auto w-full max-w-[1180px] px-5 pb-10 lg:px-8 lg:pb-12" aria-labelledby="feature-showcase-title">
+      {/* <section className="mx-auto w-full max-w-[1180px] px-5 pb-10 lg:px-8 lg:pb-12" aria-labelledby="feature-showcase-title">
         <div className="mb-4 border-y border-[var(--border)] py-5">
           <div className="max-w-[720px]">
             <div className="flex items-center gap-3 text-xs font-semibold uppercase text-[var(--text-muted)]">
@@ -473,11 +311,10 @@ export default function HomePage() {
               role="tab"
               aria-selected={activeFeatureSlide === index}
               aria-controls={`feature-slide-${slide.key}`}
-              className={`h-2.5 rounded-full transition-all duration-200 ${
-                activeFeatureSlide === index
+              className={`h-2.5 rounded-full transition-all duration-200 ${activeFeatureSlide === index
                   ? "w-9 bg-[var(--text)]"
                   : "w-2.5 bg-[var(--text-muted)] hover:w-6 hover:bg-[var(--text-dim)]"
-              }`}
+                }`}
               onMouseEnter={() => setActiveFeatureSlide(index)}
               onFocus={() => setActiveFeatureSlide(index)}
               onClick={() => setActiveFeatureSlide(index)}
@@ -486,12 +323,13 @@ export default function HomePage() {
             </button>
           ))}
         </div>
-      </section>
-      <footer className="px-5 pb-8 text-center text-xs text-[var(--text-muted)]" aria-label="ICP filing">
+      </section> */}
+
+      {/* <footer className="px-5 pb-8 text-center text-xs text-[var(--text-muted)]" aria-label="ICP filing">
         <a href="https://beian.miit.gov.cn" target="_blank" rel="noreferrer">
           &#33945;ICP&#22791;2026006682&#21495;
         </a>
-      </footer>
+      </footer> */}
     </div>
   );
 }
