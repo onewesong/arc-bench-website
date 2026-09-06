@@ -12,8 +12,8 @@ from app.models.task_outbox import TaskOutbox
 from app.models.user import User
 
 ACTIVE_RUN_STATUSES = ("QUEUED", "STARTING", "RUNNING", "PAUSE_REQUESTED", "RESUME_REQUESTED")
-MAX_ACTIVE_RUNS = 2
-MAX_GLOBAL_ACTIVE_RUNS = 4
+MAX_ACTIVE_RUNS = 200
+MAX_GLOBAL_ACTIVE_RUNS = 400
 
 
 class RunConcurrencyLimitExceeded(ValueError):
