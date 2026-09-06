@@ -862,11 +862,13 @@ function SubmissionFilePanel({
   }, [source]);
 
   useEffect(() => {
-    if (isDiffPanel) {
+    if (isDiffPanel || !submission?.workspace_path) {
+      setWorkspaceFiles([]);
+      setWorkspaceFilesLoading(false);
       return;
     }
     loadWorkspaceFiles();
-  }, [isDiffPanel, submissionId, workspaceRefreshToken]);
+  }, [isDiffPanel, submission?.workspace_path, submissionId, workspaceRefreshToken]);
 
   useEffect(() => {
     if (!fileSource?.file_path) {
