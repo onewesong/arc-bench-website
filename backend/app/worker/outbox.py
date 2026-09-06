@@ -54,8 +54,11 @@ def queue_run(db: Session, run_id: str, *, reuse_workspace: bool = False) -> Tas
     if run.status not in {"PENDING", "RUNNING", "RESUME_REQUESTED", "PAUSED"}:
         raise ValueError(f"Run '{run_id}' cannot be queued from status {run.status}")
 
-    _enforce_global_limit(db, exclude_run_id=run.id)
-    _enforce_concurrency_limit(db, run.user_id, exclude_run_id=run.id)
+    # Trusted host-side demos have their own lifecycle and do not consume the
+    # Docker evaluation slots. Uploaded/untrusted agents retain both limits.
+    if run.agent_source != "demo_replay":
+        _enforce_global_limit(db, exclude_run_id=run.id)
+        _enforce_concurrency_limit(db, run.user_id, exclude_run_id=run.id)
     run.status = "QUEUED"
     run.worker_id = None
     run.lease_until = None
